@@ -7,40 +7,76 @@ import {
   Patch,
   Get,
   Query,
-  ValidationPipe,
-  ParseIntPipe,
-  HttpException,
-  HttpStatus,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { user_Dto } from './user_register_dto.dto';
-import { user_login_Dto } from './user_login_dto.dto';
-import { pass_update_Dto } from './pass_update_dto.dto';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Post('register')
-  register(@Body(ValidationPipe) userdto: user_Dto) {
-    return this.userService.createUser(userdto);
+  @Post()
+  addUser(
+    @Body()
+    userData: {
+      email: string;
+      name: string;
+      password: string;
+      phone?: string;
+    },
+  ) {
+    return this.userService.addUser(userData);
   }
+
+  @Delete(':id')
+  removeUser(@Param('id') id: number) {
+    return this.userService.removeUser(id);
+  }
+
+  @Get('search')
+  searchUser(
+    @Query('id') id?: number,
+    @Query('name') name?: string,
+    @Query('email') email?: string,
+  ) {
+    return this.userService.searchUser({ id, name, email });
+  }
+
+  @Patch(':id')
+  updateUser(
+    @Param('id') id: number,
+    @Body()
+    updateData: Partial<{
+      name: string;
+      email: string;
+      phone: string;
+      profilePicture: string;
+    }>,
+  ) {
+    return this.userService.updateUser(id, updateData);
+  }
+
   @Post('login')
-  async login(@Body(ValidationPipe) user_login_dto: user_login_Dto) {
-    return await this.userService.login(user_login_dto);
+  login(@Body() credentials: { email: string; password: string }) {
+    return this.userService.login(credentials);
   }
 
-  @Patch('updatePass')
-  Updatepass(@Body(ValidationPipe) pass_update_dto: pass_update_Dto) {
-    return this.userService.update_password(pass_update_dto);
+  @Post('logout')
+  logout(@Body() tokenData: { token: string }) {
+    return this.userService.logout(tokenData);
   }
 
-  @Delete('/delete/:id')
-  async deleteUser(@Param('id', ParseIntPipe) id: number) {
-    try {
-      return await this.userService.deleteUser(id);
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.NOT_FOUND);
-    }
+  @Post('reset-password')
+  resetPassword(
+    @Body() resetData: { email: string; newPassword: string; token: string },
+  ) {
+    return this.userService.resetPassword(resetData);
+  }
+
+  @Patch('two-factor/:id')
+  toggleTwoFactor(
+    @Param('id') id: number,
+    @Body() toggleData: { enable: boolean },
+  ) {
+    return this.userService.toggleTwoFactor(id, toggleData);
   }
 }

@@ -1,87 +1,91 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
+import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
-import { pass_update_Dto } from './pass_update_dto.dto';
-import { user_login_Dto } from './user_login_dto.dto';
-import { user_Dto } from './user_register_dto.dto';
 
 @Injectable()
 export class UserService {
   constructor(
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
+    @InjectRepository(User) private readonly userRepository: Repository<User>,
   ) {}
 
-  async createUser(user_dto: user_Dto) {
-    const { username } = user_dto;
-    const { password } = user_dto;
-    const { full_name } = user_dto;
-    const { email } = user_dto;
-    const { phoneNumber } = user_dto;
-
-    const exist_user = await this.userRepository.findOne({
-      where: { username: username },
+  async addUser(userData: {
+    email: string;
+    name: string;
+    password: string;
+    phone?: string;
+  }) {
+    const hashedPassword = await bcrypt.hash(userData.password, 10);
+    const user = this.userRepository.create({
+      ...userData,
+      password: hashedPassword,
     });
-    //   console.log("recieved user",exist_user);
-    if (exist_user != null) {
-      throw new HttpException('user already exist', HttpStatus.BAD_REQUEST);
-    } else {
-      let privacyPolicyAccepted = true; //ekhonkar jonno
-      const new_user = this.userRepository.create({
-        username,
-        password,
-        email,
-        phoneNumber,
-        full_name,
-        privacyPolicyAccepted,
-      });
-      await this.userRepository.save(new_user);
-      return 'New user created';
-    }
+    return await this.userRepository.save(user);
   }
 
-  async login(user_login_dto: user_login_Dto) {
-    const { username } = user_login_dto;
-    const { password } = user_login_dto;
-
-    const exist_user = await this.userRepository.findOne({
-      where: { username: username, password: password },
-    });
-    if (exist_user == null) {
-      throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
-    } else {
-      console.log(exist_user);
-      const userId = exist_user.id;
-      const token = jwt.sign({ userId }, 'secretkey');
-      console.log(token);
-      return token;
-    }
+  async removeUser(id: number) {
+    return await this.userRepository.delete(id);
   }
 
-  // pore change korte hobe at final project! tokhon token ke decypher kore then authguard class diye korte hobe
-  async update_password(pass_update_dto: pass_update_Dto) {
-    const { username } = pass_update_dto;
-    const { password } = pass_update_dto;
-    const { updated_password } = pass_update_dto;
-    const exist_user = await this.userRepository.findOne({
-      where: { username: username },
-    });
-    if (!exist_user) {
-      throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
-    } else {
-      exist_user.password = updated_password;
-      await this.userRepository.save(exist_user);
-      return exist_user;
-    }
+  async searchUser(
+    criteria: Partial<{ id: number; name: string; email: string }>,
+  ) {
+    return await this.userRepository.find({ where: criteria });
   }
 
-  async deleteUser(userId: number) {
-    const result = await this.userRepository.delete(userId);
-    if (result.affected === 0) {
-      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+  async updateUser(
+    id: number,
+    updateData: Partial<{
+      name: string;
+      email: string;
+      phone: string;
+      profilePicture: string;
+    }>,
+  ) {
+    await this.userRepository.update(id, updateData);
+    return await this.userRepository.findOne({ where: { id } });
+  }
+
+  async login(credentials: { email: string; password: string }) {
+    const user = await this.userRepository.findOne({
+      where: { email: credentials.email },
+    });
+    if (!user || !(await bcrypt.compare(credentials.password, user.password))) {
+      throw new Error('Invalid credentials');
     }
-    return 'User deleted successfully';
+    const token = jwt.sign({ id: user.id, email: user.email }, 'SECRET_KEY', {
+      expiresIn: '1h',
+    });
+    return { token, user };
+  }
+
+  async logout(tokenData: { token: string }) {
+    // Implement token invalidation logic (e.g., use a blacklist or change secret key periodically)
+    return { message: 'User logged out successfully' };
+  }
+
+  async resetPassword(resetData: {
+    email: string;
+    newPassword: string;
+    token: string;
+  }) {
+    // Validate reset token (implement your token validation logic)
+    const user = await this.userRepository.findOne({
+      where: { email: resetData.email },
+    });
+    if (!user) throw new Error('User not found');
+
+    user.password = await bcrypt.hash(resetData.newPassword, 10);
+    return await this.userRepository.save(user);
+  }
+
+  async toggleTwoFactor(id: number, toggleData: { enable: boolean }) {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) throw new Error('User not found');
+
+    user.isTwoFactorEnabled = toggleData.enable;
+    return await this.userRepository.save(user);
   }
 }

@@ -1,5 +1,10 @@
-//import { Expense } from 'src/expense/expense.entity';
-import { Column, Entity, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('users')
 export class User {
@@ -7,33 +12,26 @@ export class User {
   id: number;
 
   @Column({ unique: true })
-  username: string;
+  email: string;
+
+  @Column()
+  name: string;
+
+  @Column({ nullable: true })
+  phone: string;
 
   @Column()
   password: string;
 
-  @Column()
-  full_name: string;
-
-  @Column({ unique: true })
-  email: string;
-
-  @Column({ unique: true })
-  phoneNumber: string;
-
-  @Column({ type: 'decimal', nullable: true })
-  monthlyIncome: number;
-  @Column({ type: 'decimal', nullable: true })
-  monthlyExpenses: number;
-
   @Column({ nullable: true })
-  financialGoals: string;
-  @Column({ nullable: true })
-  notificationPreferences: string;
+  profilePicture: string; // URL or file path
 
-  @Column()
-  privacyPolicyAccepted: boolean;
+  @Column('boolean', { default: false })
+  isTwoFactorEnabled: boolean;
 
-  /*@ManyToMany(() => Expense, (expense) => expense.participants)
-  expenses: Expense[];*/
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }
