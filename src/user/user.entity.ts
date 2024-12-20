@@ -11,23 +11,14 @@ export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ unique: true })
-  email: string;
-
-  @Column()
+  @Column({ nullable: true })
   name: string;
 
-  @Column({ nullable: true })
-  phone: string;
+  @Column({ unique: true })
+  username: string;
 
   @Column()
   password: string;
-
-  @Column({ nullable: true })
-  profilePicture: string; // URL or file path
-
-  @Column('boolean', { default: false })
-  isTwoFactorEnabled: boolean;
 
   @CreateDateColumn()
   createdAt: Date;

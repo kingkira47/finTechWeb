@@ -19,5 +19,5 @@ export class UpdatePreferencesDto {
 
   @IsBoolean()
   @IsOptional()
-  notificationsEnabled?: boolean;
+  notificationsEnabled: boolean;
 }

@@ -1,82 +1,57 @@
 import {
-  Controller,
-  Post,
   Body,
+  Controller,
   Delete,
+  Get,
   Param,
   Patch,
-  Get,
-  Query,
+  Post,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
+import { LocalGuard } from './guard/local.guard';
+import { Request } from 'express';
+import { JwtAuthGuard } from './guard/jwt.guard';
+import { UserDto } from './dto/user.dto';
 
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(private userService: UserService) {}
 
-  @Post()
-  addUser(
+  @Post('/signup')
+  createUser(
     @Body()
-    userData: {
-      email: string;
-      name: string;
-      password: string;
-      phone?: string;
-    },
+    userData: UserDto,
   ) {
-    return this.userService.addUser(userData);
+    return this.userService.signup(userData);
   }
 
-  @Delete(':id')
-  removeUser(@Param('id') id: number) {
-    return this.userService.removeUser(id);
+  @Post('/signin')
+  @UseGuards(LocalGuard)
+  login(@Req() req: Request) {
+    return req.user;
   }
 
-  @Get('search')
-  searchUser(
-    @Query('id') id?: number,
-    @Query('name') name?: string,
-    @Query('email') email?: string,
-  ) {
-    return this.userService.searchUser({ id, name, email });
+  @Get('/whoami')
+  @UseGuards(JwtAuthGuard)
+  whoAmI(@Req() req: Request) {
+    const user = req.user as any;
+    return `${user.name} is logged in!`;
   }
 
-  @Patch(':id')
-  updateUser(
-    @Param('id') id: number,
-    @Body()
-    updateData: Partial<{
-      name: string;
-      email: string;
-      phone: string;
-      profilePicture: string;
-    }>,
-  ) {
-    return this.userService.updateUser(id, updateData);
+  @Get('/:id')
+  findUser(@Param('id') id: string) {
+    return this.userService.findOne(parseInt(id));
   }
 
-  @Post('login')
-  login(@Body() credentials: { email: string; password: string }) {
-    return this.userService.login(credentials);
+  @Delete('/:id')
+  removeUser(@Param('id') id: string) {
+    return this.userService.remove(parseInt(id));
   }
 
-  @Post('logout')
-  logout(@Body() tokenData: { token: string }) {
-    return this.userService.logout(tokenData);
-  }
-
-  @Post('reset-password')
-  resetPassword(
-    @Body() resetData: { email: string; newPassword: string; token: string },
-  ) {
-    return this.userService.resetPassword(resetData);
-  }
-
-  @Patch('two-factor/:id')
-  toggleTwoFactor(
-    @Param('id') id: number,
-    @Body() toggleData: { enable: boolean },
-  ) {
-    return this.userService.toggleTwoFactor(id, toggleData);
+  @Patch('/:id')
+  updateUser(@Param('id') id: string, @Body() userData: UserDto) {
+    return this.userService.update(parseInt(id), userData);
   }
 }

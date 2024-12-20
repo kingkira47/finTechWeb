@@ -1,91 +1,76 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { UserDto } from './dto/user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { User } from './user.entity';
-import * as bcrypt from 'bcrypt';
-import * as jwt from 'jsonwebtoken';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class UserService {
   constructor(
+    private jwtService: JwtService,
     @InjectRepository(User) private readonly userRepository: Repository<User>,
   ) {}
 
-  async addUser(userData: {
-    email: string;
-    name: string;
-    password: string;
-    phone?: string;
-  }) {
-    const hashedPassword = await bcrypt.hash(userData.password, 10);
-    const user = this.userRepository.create({
-      ...userData,
-      password: hashedPassword,
+  async signup(userData: UserDto) {
+    const findUser = await this.userRepository.findOne({
+      where: { username: userData.username },
     });
-    return await this.userRepository.save(user);
-  }
-
-  async removeUser(id: number) {
-    return await this.userRepository.delete(id);
-  }
-
-  async searchUser(
-    criteria: Partial<{ id: number; name: string; email: string }>,
-  ) {
-    return await this.userRepository.find({ where: criteria });
-  }
-
-  async updateUser(
-    id: number,
-    updateData: Partial<{
-      name: string;
-      email: string;
-      phone: string;
-      profilePicture: string;
-    }>,
-  ) {
-    await this.userRepository.update(id, updateData);
-    return await this.userRepository.findOne({ where: { id } });
-  }
-
-  async login(credentials: { email: string; password: string }) {
-    const user = await this.userRepository.findOne({
-      where: { email: credentials.email },
-    });
-    if (!user || !(await bcrypt.compare(credentials.password, user.password))) {
-      throw new Error('Invalid credentials');
+    if (findUser) {
+      throw new BadRequestException('Username Already Exists!');
     }
-    const token = jwt.sign({ id: user.id, email: user.email }, 'SECRET_KEY', {
-      expiresIn: '1h',
+    const user = this.userRepository.create(userData);
+    await this.userRepository.save(user);
+    return `User Created Successfully!`;
+  }
+
+  async validateUser({ username, password }: UserDto) {
+    const findUser = await this.userRepository.findOne({
+      where: { username: username },
     });
-    return { token, user };
+
+    if (!findUser) return null;
+
+    if (password === findUser.password) {
+      const { password, ...user } = findUser;
+      return this.jwtService.sign(user);
+    }
   }
 
-  async logout(tokenData: { token: string }) {
-    // Implement token invalidation logic (e.g., use a blacklist or change secret key periodically)
-    return { message: 'User logged out successfully' };
-  }
-
-  async resetPassword(resetData: {
-    email: string;
-    newPassword: string;
-    token: string;
-  }) {
-    // Validate reset token (implement your token validation logic)
-    const user = await this.userRepository.findOne({
-      where: { email: resetData.email },
+  async findOne(id: number) {
+    const findUser = await this.userRepository.findOne({
+      where: { id },
     });
-    if (!user) throw new Error('User not found');
-
-    user.password = await bcrypt.hash(resetData.newPassword, 10);
-    return await this.userRepository.save(user);
+    if (!findUser) {
+      throw new NotFoundException('User Not Found!');
+    }
+    return findUser;
   }
 
-  async toggleTwoFactor(id: number, toggleData: { enable: boolean }) {
-    const user = await this.userRepository.findOne({ where: { id } });
-    if (!user) throw new Error('User not found');
+  async remove(id: number) {
+    const findUser = await this.userRepository.findOne({
+      where: { id },
+    });
+    if (!findUser) {
+      throw new NotFoundException('User Not Found!');
+    }
+    await this.userRepository.remove(findUser);
+    return `User Deleted Successfully!`;
+  }
 
-    user.isTwoFactorEnabled = toggleData.enable;
-    return await this.userRepository.save(user);
+  async update(id: number, attrs: Partial<User>) {
+    const findUser = await this.userRepository.findOne({
+      where: { id },
+    });
+    if (!findUser) {
+      throw new NotFoundException('User Not Found!');
+    }
+    Object.assign(findUser, attrs);
+    await this.userRepository.save(findUser);
+    return `User Updated Successfully!`;
   }
 }
