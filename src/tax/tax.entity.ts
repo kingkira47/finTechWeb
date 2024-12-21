@@ -22,10 +22,7 @@ export class TaxRecord {
   estimatedTax: number;
 
   @Column('float')
-  deductions: number;
-
-  @Column('float', { nullable: true })
-  finalTax: number;
+  taxableIncome: number;
 
   @CreateDateColumn()
   createdAt: Date;

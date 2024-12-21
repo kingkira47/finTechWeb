@@ -25,7 +25,7 @@ export class UserService {
     }
     const user = this.userRepository.create(userData);
     await this.userRepository.save(user);
-    return `User Created Successfully!`;
+    return `User Created Successfully! Your id is ${user.id}!`;
   }
 
   async validateUser({ username, password }: UserDto) {

@@ -6,7 +6,4 @@ export class EstimateTaxDto {
 
   @IsNumber()
   annualIncome: number;
-
-  @IsNumber()
-  deductions: number;
 }

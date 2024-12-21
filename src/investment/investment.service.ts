@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Investment } from './investment.entity';
+import { AddInvestmentDto } from './dto/add-investment.dto';
 
 @Injectable()
 export class InvestmentService {
@@ -10,13 +11,7 @@ export class InvestmentService {
     private readonly investmentRepository: Repository<Investment>,
   ) {}
 
-  async addInvestment(investmentData: {
-    userId: number;
-    type: string;
-    name: string;
-    amountInvested: number;
-    purchaseDate?: string;
-  }) {
+  async addInvestment(investmentData: AddInvestmentDto) {
     const investment = this.investmentRepository.create({
       user: { id: investmentData.userId },
       type: investmentData.type,
@@ -26,7 +21,11 @@ export class InvestmentService {
         ? new Date(investmentData.purchaseDate)
         : undefined,
     });
-    return await this.investmentRepository.save(investment);
+    await this.investmentRepository.save(investment);
+
+    return {
+      message: `Investment added successfully. Investment ID: ${investment.id}`,
+    };
   }
 
   async getInvestments(userId: number) {
@@ -43,7 +42,9 @@ export class InvestmentService {
     const investment = await this.investmentRepository.findOne({
       where: { id },
     });
-    if (!investment) throw new Error('Investment not found');
+    if (!investment) {
+      throw new BadRequestException('Investment not found');
+    }
 
     if (updateData.currentValue !== undefined) {
       investment.currentValue = updateData.currentValue;
@@ -62,7 +63,9 @@ export class InvestmentService {
 
   async deleteInvestment(id: number) {
     const result = await this.investmentRepository.delete({ id });
-    if (result.affected === 0) throw new Error('Investment not found');
+    if (result.affected === 0) {
+      throw new BadRequestException('Investment not found');
+    }
     return { message: 'Investment deleted successfully' };
   }
 }

@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards } from '@nestjs/common';
 import { FeedbackService } from './feedback.service';
 import { SubmitFeedbackDto } from './dto/submit-feedback.dto';
 import { SubmitSupportRequestDto } from './dto/submit-support-request.dto';

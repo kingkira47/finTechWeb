@@ -3,12 +3,10 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SettingsModule } from './settings/settings.module';
-// import { UserModule } from './user/user.module';
-// import { FeedbackModule } from './feedback/feedback.module';
-// import { SavingsGoalModule } from './savings-goals/savings-goals.module';
-// import { InvestmentModule } from './investment/investment.module';
-// import { TaxModule } from './tax/tax.module';
-//import { AuthModule } from './auth/auth.module';
+import { FeedbackModule } from './feedback/feedback.module';
+import { SavingsGoalModule } from './savings-goals/savings-goals.module';
+import { InvestmentModule } from './investment/investment.module';
+import { TaxModule } from './tax/tax.module';
 import { UserModule } from './user/user.module';
 
 @Module({
@@ -24,12 +22,10 @@ import { UserModule } from './user/user.module';
       synchronize: true,
     }),
     SettingsModule,
-    // UserModule,
-    // FeedbackModule,
-    // SavingsGoalModule,
-    // InvestmentModule,
-    // TaxModule,
-    // AuthModule,
+    FeedbackModule,
+    SavingsGoalModule,
+    InvestmentModule,
+    TaxModule,
     UserModule,
   ],
   controllers: [AppController],

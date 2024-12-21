@@ -37,20 +37,23 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   whoAmI(@Req() req: Request) {
     const user = req.user as any;
-    return `${user.name} is logged in!`;
+    return `${user.username} is logged in! Your id is ${user.id}!`;
   }
 
   @Get('/:id')
+  @UseGuards(JwtAuthGuard)
   findUser(@Param('id') id: string) {
     return this.userService.findOne(parseInt(id));
   }
 
   @Delete('/:id')
+  @UseGuards(JwtAuthGuard)
   removeUser(@Param('id') id: string) {
     return this.userService.remove(parseInt(id));
   }
 
   @Patch('/:id')
+  @UseGuards(JwtAuthGuard)
   updateUser(@Param('id') id: string, @Body() userData: UserDto) {
     return this.userService.update(parseInt(id), userData);
   }

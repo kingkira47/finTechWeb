@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SavingsGoal } from './savings-goal.entity';
+import { CreateSavingsGoalDto } from './dto/create-savings-goal.dto';
 
 @Injectable()
 export class SavingsGoalService {
@@ -10,19 +11,18 @@ export class SavingsGoalService {
     private readonly savingsGoalRepository: Repository<SavingsGoal>,
   ) {}
 
-  async createSavingsGoal(savingsGoalData: {
-    userId: number;
-    name: string;
-    targetAmount: number;
-    targetDate: string;
-  }) {
+  async createSavingsGoal(savingsGoalData: CreateSavingsGoalDto) {
     const savingsGoal = this.savingsGoalRepository.create({
       user: { id: savingsGoalData.userId },
       name: savingsGoalData.name,
       targetAmount: savingsGoalData.targetAmount,
       targetDate: new Date(savingsGoalData.targetDate),
     });
-    return await this.savingsGoalRepository.save(savingsGoal);
+    await this.savingsGoalRepository.save(savingsGoal);
+
+    return {
+      message: `Savings goal created successfully. Savings goal id: ${savingsGoal.id}`,
+    };
   }
 
   async getSavingsGoals(userId: number) {
@@ -39,7 +39,9 @@ export class SavingsGoalService {
     const savingsGoal = await this.savingsGoalRepository.findOne({
       where: { id },
     });
-    if (!savingsGoal) throw new Error('Savings goal not found');
+    if (!savingsGoal) {
+      throw new BadRequestException('Savings goal not found');
+    }
 
     if (updateData.currentAmount !== undefined) {
       savingsGoal.currentAmount = updateData.currentAmount;
@@ -49,12 +51,16 @@ export class SavingsGoalService {
       savingsGoal.achieved = updateData.achieved;
     }
 
-    return await this.savingsGoalRepository.save(savingsGoal);
+    await this.savingsGoalRepository.save(savingsGoal);
+
+    return { message: 'Savings goal updated successfully' };
   }
 
   async deleteSavingsGoal(id: number) {
     const result = await this.savingsGoalRepository.delete({ id });
-    if (result.affected === 0) throw new Error('Savings goal not found');
+    if (result.affected === 0) {
+      throw new BadRequestException('Savings goal not found');
+    }
     return { message: 'Savings goal deleted successfully' };
   }
 }

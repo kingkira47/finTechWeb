@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Feedback } from './feedback.entity';
 import { SupportRequest } from './feedback.entity';
+import { SubmitFeedbackDto } from './dto/submit-feedback.dto';
+import { SubmitSupportRequestDto } from './dto/submit-support-request.dto';
 
 @Injectable()
 export class FeedbackService {
@@ -13,27 +15,24 @@ export class FeedbackService {
     private readonly supportRequestRepository: Repository<SupportRequest>,
   ) {}
 
-  async submitFeedback(feedbackData: { userId?: number; message: string }) {
+  async submitFeedback(feedbackData: SubmitFeedbackDto) {
     const feedback = this.feedbackRepository.create({
       user: feedbackData.userId ? { id: feedbackData.userId } : null,
       message: feedbackData.message,
     });
-    return await this.feedbackRepository.save(feedback);
+    await this.feedbackRepository.save(feedback);
+    return `Feedback submitted: ${feedbackData.message}`;
   }
 
-  async submitSupportRequest(supportData: {
-    userId?: number;
-    subject: string;
-    message: string;
-    contactEmail: string;
-  }) {
+  async submitSupportRequest(supportData: SubmitSupportRequestDto) {
     const request = this.supportRequestRepository.create({
       user: supportData.userId ? { id: supportData.userId } : null,
       subject: supportData.subject,
       message: supportData.message,
       contactEmail: supportData.contactEmail,
     });
-    return await this.supportRequestRepository.save(request);
+    await this.supportRequestRepository.save(request);
+    return `Support request submitted: ${supportData.subject}`;
   }
 
   async getFAQs() {
